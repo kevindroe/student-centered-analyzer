@@ -1,0 +1,761 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Teacher–Student Centeredness Analyzer</title>
+  <style>
+    :root { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+    body { margin: 0; padding: 14px; background: #f6f7fb; color: #111; }
+    .wrap { max-width: 1120px; margin: 0 auto; }
+
+    /* Header */
+    .header { display:flex; align-items:center; gap: 14px; flex-wrap: wrap; margin-bottom: 10px; }
+    .logo { max-height: 76px; width: auto; }
+    h1 { font-size: 22px; margin: 0; }
+    .byline { margin: 2px 0 0; color:#444; font-size: 12.5px; }
+    .sub { margin: 10px 0 14px; color: #444; font-size: 13px; line-height: 1.35; }
+
+    /* Layout */
+    .grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+    @media (min-width: 980px) { .grid { grid-template-columns: 1.15fr .85fr; } }
+
+    /* Cards + form */
+    .card { background: #fff; border-radius: 14px; padding: 14px; box-shadow: 0 6px 24px rgba(0,0,0,.08); }
+    label { display:block; font-size: 12px; color:#444; margin: 0 0 4px; }
+    input[type="text"], input[type="date"], input[type="number"], textarea {
+      width: 100%; box-sizing: border-box;
+      padding: 10px 12px; border-radius: 10px; border: 1px solid #d7dbe8;
+      background: #fff; font-size: 14px;
+    }
+    input[type="number"] { max-width: 180px; }
+    textarea { min-height: 120px; resize: vertical; }
+
+    .row { display:grid; grid-template-columns: 1fr; gap: 10px; }
+    @media (min-width: 980px) { .row.two { grid-template-columns: 1fr 1fr; } }
+    @media (min-width: 980px) { .row.three { grid-template-columns: 1fr 1fr 1fr; } }
+
+    /* Top area */
+    .topbar { display:flex; align-items: flex-end; justify-content: space-between; gap: 12px; margin-top: 10px; flex-wrap: wrap; }
+    .time { font-variant-numeric: tabular-nums; letter-spacing: .4px; }
+    .big { font-size: 34px; font-weight: 900; }
+
+    .pill { padding: 6px 10px; border-radius: 999px; background: #eef1ff; color: #2a3bb7; font-weight: 850; font-size: 12px; }
+    .pill.off { background:#f0f2f8; color:#444; }
+    .pill.on { background:#e9f7ef; color:#136a36; }
+
+    /* Controls */
+    .controls { display:flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+    button {
+      border: 0; border-radius: 12px; padding: 10px 12px; font-weight: 850;
+      cursor: pointer; background: #1e2330; color: #fff;
+      touch-action: manipulation;
+    }
+    button.secondary { background: #e9ecf6; color: #111; }
+    button.danger { background: #b11b2a; }
+    button:disabled { opacity: .55; cursor:not-allowed; }
+
+    /* Timer grid */
+    .timers { display:grid; grid-template-columns: 1fr; gap: 10px; margin-top: 12px; }
+    @media (min-width: 980px) { .timers { grid-template-columns: 1fr 1fr; } }
+
+    .timerBox{
+      border: 1px solid #e3e6f2;
+      border-radius: 14px;
+      padding: 12px;
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+    .timerHead{
+      display:grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: start;
+    }
+    .timerBox.active{
+      box-shadow: 0 0 0 3px rgba(30,35,48,.10);
+      border-color: #1e2330;
+    }
+
+    /* === COLOR SCHEME REQUESTED ===
+       Teacher-centered = yellow
+       Student-centered = purple
+       Other = green
+    */
+    .teacherArea { background: #fff7cc; border-color: #f0e08a; } /* light yellow */
+    .studentArea { background: #f1e6ff; border-color: #d4b8ff; } /* light purple */
+    .otherArea   { background: #e6f7ea; border-color: #a9e0b5; } /* light green */
+
+    .name { font-weight: 950; }
+    .desc { margin-top: 2px; font-size: 12px; color:#555; }
+    .rightTop { text-align:right; }
+    .val { font-size: 26px; font-weight: 950; font-variant-numeric: tabular-nums; }
+    .meta { font-size: 12px; color:#555; }
+
+    .btnrow { display:flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+    .btnrow button { padding: 10px 14px; }
+    .bigTap { flex: 1 1 170px; min-width: 170px; }
+
+    .kbd { font-family: ui-monospace, Menlo, Consolas, monospace; background:#f1f3fb; padding:2px 6px; border-radius:6px; border:1px solid #d7dbe8; }
+
+    /* Gauge + right-side cards */
+    .panel { border: 1px solid #e3e6f2; border-radius: 14px; padding: 12px; background: #fbfcff; }
+    .panelTitle { font-weight: 950; margin-bottom: 6px; }
+
+    .gaugeBar {
+      position: relative;
+      height: 18px;
+      border-radius: 999px;
+      overflow: hidden;
+      border: 1px solid #d7dbe8;
+      /* yellow (teacher) -> neutral -> purple (student) */
+      background: linear-gradient(90deg,
+        #fff2b3 0%,
+        #fff2b3 45%,
+        #f6f7fb 50%,
+        #ead7ff 55%,
+        #ead7ff 100%);
+    }
+    .needle {
+      position: absolute;
+      top: -6px;
+      width: 0;
+      height: 30px;
+      border-left: 3px solid #1e2330;
+      transform: translateX(-50%);
+    }
+    .gaugeLabels { display:flex; justify-content: space-between; font-size: 12px; color:#555; margin-top: 6px; }
+    .scoreLine { display:flex; flex-wrap: wrap; gap: 10px; align-items: baseline; justify-content: space-between; margin-top: 10px; }
+    .score { font-size: 30px; font-weight: 950; font-variant-numeric: tabular-nums; }
+    .scoreNote { font-size: 12px; color:#555; }
+
+    /* Bucket totals */
+    .sumGrid { display:grid; grid-template-columns: 1fr; gap: 10px; margin-top: 10px; }
+    .sumRow { display:grid; grid-template-columns: 1fr auto; gap: 10px; padding: 8px 10px; border: 1px solid #e3e6f2; border-radius: 12px; background:#fff; }
+    .tag { font-size: 11px; font-weight: 950; padding: 4px 8px; border-radius: 999px; }
+    .tag.tc { background:#fff2b3; color:#6c5200; }
+    .tag.sc { background:#ead7ff; color:#4b1d7a; }
+    .tag.shared { background:#eef1ff; color:#2a3bb7; }
+    .tag.neutral { background:#e6f7ea; color:#136a36; }
+
+    #output { min-height: 240px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; font-size: 12px; background: #fbfcff; white-space: pre; }
+    .footer { font-size: 12px; color:#555; margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="header">
+      <!-- Put the PNG in the same folder as this HTML file. -->
+      <!-- If you rename it to: nextgen-logo.png, update src accordingly. -->
+      <img class="logo" src="Next%20Gen%20Music%20Ed%20logo.png" alt="Next Gen Music Ed logo">
+      <div>
+        <h1>Teacher–Student Centeredness Analyzer</h1>
+        <div class="byline">Developed by Kevin Droe, Ph.D.</div>
+      </div>
+    </div>
+
+    <p class="sub">
+      Tap <b>Start this</b> for the category you are observing. Starting one category automatically stops the others.
+      The app computes a centeredness score (−100 teacher-centered to +100 student-centered) and live percentages.
+    </p>
+
+    <div class="grid">
+      <!-- LEFT -->
+      <div class="card">
+        <div class="row two">
+          <div>
+            <label for="observer">Observer name</label>
+            <input id="observer" type="text" placeholder="Student observer" />
+          </div>
+          <div>
+            <label for="date">Date</label>
+            <input id="date" type="date" />
+          </div>
+        </div>
+
+        <div class="row three" style="margin-top:10px;">
+          <div>
+            <label for="teacher">Observed teacher</label>
+            <input id="teacher" type="text" placeholder="Teacher (optional)" />
+          </div>
+          <div>
+            <label for="context">Context</label>
+            <input id="context" type="text" placeholder="Rehearsal / lesson / sectional" />
+          </div>
+          <div>
+            <label for="duration">Target length (minutes)</label>
+            <input id="duration" type="number" min="1" step="1" value="10" />
+          </div>
+        </div>
+
+        <div class="topbar">
+          <div>
+            <div style="font-size:12px; color:#555;">Elapsed total</div>
+            <div id="elapsedTotal" class="time big">00:00.0</div>
+          </div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end;">
+            <span id="targetPill" class="pill">Target: 10:00</span>
+            <span id="statePill" class="pill off">Stopped</span>
+          </div>
+        </div>
+
+        <div class="controls">
+          <button id="startStopBtn">Start</button>
+          <button id="stopAllBtn" class="secondary">Stop all</button>
+          <button id="resetBtn" class="danger">Reset</button>
+          <button id="exportBtn">Export summary</button>
+        </div>
+
+        <div class="timers" id="timers"></div>
+
+        <div style="margin-top:12px;">
+          <label for="notes">Notes</label>
+          <textarea id="notes" placeholder="Optional: examples of decisions, peer interactions, teacher prompts, etc."></textarea>
+        </div>
+
+        <div class="footer">
+          Shortcuts: <span class="kbd">Space</span> Start/Stop •
+          <span class="kbd">1–8</span> Toggle categories •
+          <span class="kbd">E</span> Export
+        </div>
+      </div>
+
+      <!-- RIGHT -->
+      <div class="card">
+        <div class="panel">
+          <div class="panelTitle">Centeredness gauge</div>
+          <div class="gaugeBar">
+            <div id="needle" class="needle" style="left:50%;"></div>
+          </div>
+          <div class="gaugeLabels">
+            <div>Teacher-centered</div>
+            <div>Student-centered</div>
+          </div>
+          <div class="scoreLine">
+            <div>
+              <div style="font-size:12px; color:#555;">Centeredness score</div>
+              <div id="score" class="score">0</div>
+            </div>
+            <div class="scoreNote">−100 = teacher-centered • 0 = balanced • +100 = student-centered</div>
+          </div>
+        </div>
+
+        <div class="panel" style="margin-top:12px;">
+          <div class="panelTitle">Bucket totals</div>
+          <div class="sumGrid" id="summaryRows"></div>
+          <div class="footer">Percentages are based on total observed time.</div>
+        </div>
+
+        <div class="panel" style="margin-top:12px;">
+          <label for="output">Export (copy/paste into LMS or Google Form)</label>
+          <textarea id="output" placeholder="Click “Export summary” to generate a clean text block."></textarea>
+          <div class="controls">
+            <button id="copyBtn" class="secondary">Copy to clipboard</button>
+            <button id="downloadBtn" class="secondary">Download CSV</button>
+          </div>
+        </div>
+
+        <div class="footer">
+          Tip: If students ever can’t click buttons, they’re probably viewing a Drive/LMS “preview.” Use the GitHub Pages link or open in a normal browser tab.
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+(() => {
+  // group:
+  //   teacher => yellow
+  //   student => purple
+  //   other   => green
+  //
+  // bucket (for score):
+  //   TC     = teacher-centered (included in score)
+  //   SC     = student-centered (included in score)
+  //   SHARED = collaborative (counts half TC + half SC in score)
+  //   NEUTRAL= other (excluded from score)
+  const categories = [
+    { id:"teacherTalk",      label:"Teacher explanation/talk",       desc:"Teacher explaining, directing, giving information.",                 bucket:"TC",     group:"teacher" },
+    { id:"teacherModeling",  label:"Teacher modeling",               desc:"Teacher demonstrates musically (sing/play/clap).",                   bucket:"TC",     group:"teacher" },
+    { id:"teacherDirecting", label:"Teacher directing/correcting",   desc:"Teacher stops/adjusts/corrects; direct instruction.",                bucket:"TC",     group:"teacher" },
+
+    { id:"studentsPerforming", label:"Students performing",          desc:"Students play/sing (whole group, section, or individual).",          bucket:"SC",     group:"student" },
+    { id:"studentDiscussion",  label:"Student discussion/reflection",desc:"Students evaluate, reflect, set goals, explain thinking.",           bucket:"SC",     group:"student" },
+    { id:"studentDecision",    label:"Student decision making",      desc:"Students choose/plan/solve/lead musical decisions.",                 bucket:"SC",     group:"student" },
+
+    { id:"collaborative", label:"Collaborative music making",        desc:"Students collaborate musically; shared ownership/leadership.",       bucket:"SHARED", group:"student" },
+
+    { id:"other", label:"Other", desc:"Transitions, setup, waiting, logistics, non-musical tasks.",                                           bucket:"NEUTRAL",group:"other" },
+  ];
+
+  const state = {
+    running: false,
+    activeId: null,
+    lastPerf: null,
+    elapsedTotalMs: 0,
+    elapsedById: Object.fromEntries(categories.map(c => [c.id, 0])),
+    raf: null,
+  };
+
+  // Elements
+  const observerEl = document.getElementById("observer");
+  const teacherEl = document.getElementById("teacher");
+  const contextEl = document.getElementById("context");
+  const dateEl = document.getElementById("date");
+  const durationEl = document.getElementById("duration");
+  const notesEl = document.getElementById("notes");
+
+  const elapsedTotalEl = document.getElementById("elapsedTotal");
+  const targetPillEl = document.getElementById("targetPill");
+  const statePillEl = document.getElementById("statePill");
+
+  const startStopBtn = document.getElementById("startStopBtn");
+  const stopAllBtn = document.getElementById("stopAllBtn");
+  const resetBtn = document.getElementById("resetBtn");
+  const exportBtn = document.getElementById("exportBtn");
+
+  const timersEl = document.getElementById("timers");
+  const summaryRowsEl = document.getElementById("summaryRows");
+
+  const needleEl = document.getElementById("needle");
+  const scoreEl = document.getElementById("score");
+
+  const outputEl = document.getElementById("output");
+  const copyBtn = document.getElementById("copyBtn");
+  const downloadBtn = document.getElementById("downloadBtn");
+
+  dateEl.valueAsDate = new Date();
+
+  const clamp = (n, min, max) => Math.max(min, Math.min(max, n));
+
+  function formatMs(ms) {
+    const totalTenths = Math.floor(ms / 100);
+    const tenths = totalTenths % 10;
+    const totalSeconds = Math.floor(totalTenths / 10);
+    const s = totalSeconds % 60;
+    const m = Math.floor(totalSeconds / 60);
+    return `${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}.${tenths}`;
+  }
+  function formatMsNoTenths(ms) {
+    const totalSeconds = Math.round(ms / 1000);
+    const s = totalSeconds % 60;
+    const m = Math.floor(totalSeconds / 60);
+    return `${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
+  }
+  function msToSeconds(ms){ return Math.round(ms/1000); }
+
+  function updateTargetPill() {
+    const mins = clamp(parseInt(durationEl.value || "10", 10), 1, 999);
+    targetPillEl.textContent = `Target: ${formatMsNoTenths(mins * 60 * 1000)}`;
+  }
+  durationEl.addEventListener("change", updateTargetPill);
+  updateTargetPill();
+
+  function setRunUI() {
+    statePillEl.textContent = state.running ? "Running" : "Stopped";
+    statePillEl.className = `pill ${state.running ? "on" : "off"}`;
+    startStopBtn.textContent = state.running ? "Stop" : "Start";
+  }
+
+  function sumByBucket() {
+    const sums = { TC:0, SC:0, SHARED:0, NEUTRAL:0 };
+    for (const c of categories) sums[c.bucket] += state.elapsedById[c.id];
+    return sums;
+  }
+
+  function centerednessScoreFromSums(sums) {
+    // Excludes NEUTRAL from score.
+    const centeredMs = sums.TC + sums.SC + sums.SHARED;
+    if (centeredMs <= 0) return 0;
+
+    // Shared counts as half teacher + half student.
+    const tcEff = sums.TC + 0.5 * sums.SHARED;
+    const scEff = sums.SC + 0.5 * sums.SHARED;
+
+    return Math.round(((scEff - tcEff) / centeredMs) * 100);
+  }
+
+  function bucketLabel(bucket) {
+    if (bucket === "TC") return "Teacher-centered";
+    if (bucket === "SC") return "Student-centered";
+    if (bucket === "SHARED") return "Shared";
+    return "Other";
+  }
+  function tagClass(bucket) {
+    if (bucket === "TC") return "tc";
+    if (bucket === "SC") return "sc";
+    if (bucket === "SHARED") return "shared";
+    return "neutral";
+  }
+
+  function needleLeftFromScore(score) {
+    return clamp((score + 100) / 2, 0, 100);
+  }
+
+  function groupClass(group) {
+    if (group === "teacher") return "teacherArea";
+    if (group === "student") return "studentArea";
+    return "otherArea";
+  }
+
+  function renderTimers() {
+    timersEl.innerHTML = "";
+    categories.forEach((c, idx) => {
+      const box = document.createElement("div");
+      box.className = `timerBox ${groupClass(c.group)}`;
+      box.id = `box-${c.id}`;
+
+      const head = document.createElement("div");
+      head.className = "timerHead";
+
+      const left = document.createElement("div");
+      left.innerHTML = `
+        <div class="name">${idx + 1}. ${c.label}</div>
+        <div class="desc">${c.desc}</div>
+      `;
+
+      const rightTop = document.createElement("div");
+      rightTop.className = "rightTop";
+      rightTop.innerHTML = `
+        <div class="val" id="time-${c.id}">00:00</div>
+        <div class="meta"><span id="pct-${c.id}">0%</span></div>
+      `;
+
+      head.appendChild(left);
+      head.appendChild(rightTop);
+
+      const btnRow = document.createElement("div");
+      btnRow.className = "btnrow";
+
+      const toggleBtn = document.createElement("button");
+      toggleBtn.className = "bigTap";
+      toggleBtn.id = `toggle-${c.id}`;
+      toggleBtn.textContent = "Start this";
+      toggleBtn.addEventListener("click", () => toggleCategory(c.id));
+
+      const stopBtn = document.createElement("button");
+      stopBtn.className = "secondary";
+      stopBtn.textContent = "Stop";
+      stopBtn.addEventListener("click", () => stopCategory(c.id));
+
+      btnRow.appendChild(toggleBtn);
+      btnRow.appendChild(stopBtn);
+
+      box.appendChild(head);
+      box.appendChild(btnRow);
+
+      timersEl.appendChild(box);
+    });
+  }
+
+  function renderSummaryRows(sums, totalMs) {
+    summaryRowsEl.innerHTML = "";
+    const rows = [
+      { bucket:"TC", label:"Teacher-centered time", ms:sums.TC },
+      { bucket:"SC", label:"Student-centered time", ms:sums.SC },
+      { bucket:"SHARED", label:"Shared time", ms:sums.SHARED },
+      { bucket:"NEUTRAL", label:"Other time", ms:sums.NEUTRAL },
+    ];
+    rows.forEach(r => {
+      const pct = totalMs > 0 ? Math.round((r.ms / totalMs) * 100) : 0;
+      const div = document.createElement("div");
+      div.className = "sumRow";
+      div.innerHTML = `
+        <div>
+          <div style="font-weight:950;">${r.label}</div>
+          <div style="font-size:12px;color:#555;">${formatMsNoTenths(r.ms)} • ${pct}%</div>
+        </div>
+        <div style="align-self:center;">
+          <span class="tag ${tagClass(r.bucket)}">${bucketLabel(r.bucket)}</span>
+        </div>
+      `;
+      summaryRowsEl.appendChild(div);
+    });
+  }
+
+  function updateDisplays() {
+    elapsedTotalEl.textContent = formatMs(state.elapsedTotalMs);
+
+    const total = Math.max(1, state.elapsedTotalMs);
+    categories.forEach((c) => {
+      const ms = state.elapsedById[c.id];
+      const pct = Math.round((ms / total) * 100);
+
+      const timeEl = document.getElementById(`time-${c.id}`);
+      const pctEl = document.getElementById(`pct-${c.id}`);
+      const box = document.getElementById(`box-${c.id}`);
+      const toggleBtn = document.getElementById(`toggle-${c.id}`);
+
+      if (timeEl) timeEl.textContent = formatMsNoTenths(ms);
+      if (pctEl) pctEl.textContent = `${pct}%`;
+
+      const isActive = (state.running && state.activeId === c.id);
+      if (box) box.classList.toggle("active", isActive);
+      if (toggleBtn) toggleBtn.textContent = isActive ? "Running…" : "Start this";
+    });
+
+    const sums = sumByBucket();
+    const score = centerednessScoreFromSums(sums);
+    scoreEl.textContent = String(score);
+    needleEl.style.left = `${needleLeftFromScore(score)}%`;
+
+    renderSummaryRows(sums, state.elapsedTotalMs);
+  }
+
+  function tick(now) {
+    if (!state.running) return;
+    if (state.lastPerf == null) state.lastPerf = now;
+
+    const dt = now - state.lastPerf;
+    state.lastPerf = now;
+
+    state.elapsedTotalMs += dt;
+    if (state.activeId) state.elapsedById[state.activeId] += dt;
+
+    const mins = clamp(parseInt(durationEl.value || "10", 10), 1, 999);
+    const targetMs = mins * 60 * 1000;
+    if (state.elapsedTotalMs >= targetMs) {
+      const over = state.elapsedTotalMs - targetMs;
+      state.elapsedTotalMs = targetMs;
+      if (state.activeId) state.elapsedById[state.activeId] = Math.max(0, state.elapsedById[state.activeId] - over);
+      stopAll();
+      updateDisplays();
+      return;
+    }
+
+    updateDisplays();
+    state.raf = requestAnimationFrame(tick);
+  }
+
+  function startAll() {
+    if (state.running) return;
+    state.running = true;
+    state.lastPerf = null;
+    setRunUI();
+    state.raf = requestAnimationFrame(tick);
+  }
+
+  function stopAll() {
+    if (!state.running) return;
+    state.running = false;
+    if (state.raf) cancelAnimationFrame(state.raf);
+    state.raf = null;
+    state.lastPerf = null;
+    state.activeId = null;
+    setRunUI();
+  }
+
+  function toggleCategory(id) {
+    if (!state.running) startAll();
+
+    // tap the same category to "pause" the classification without stopping total timer
+    if (state.activeId === id) {
+      state.activeId = null;
+      updateDisplays();
+      return;
+    }
+
+    // Prevent overlap automatically: set active category (others implicitly stop)
+    state.activeId = id;
+    updateDisplays();
+  }
+
+  function stopCategory(id) {
+    if (state.activeId === id) {
+      state.activeId = null;
+      updateDisplays();
+    }
+  }
+
+  function resetAll() {
+    stopAll();
+    state.elapsedTotalMs = 0;
+    state.activeId = null;
+    for (const k of Object.keys(state.elapsedById)) state.elapsedById[k] = 0;
+    outputEl.value = "";
+    notesEl.value = "";
+    updateDisplays();
+  }
+
+  function exportSummary() {
+    if (state.running) stopAll();
+
+    const observer = observerEl.value.trim();
+    const teacher = teacherEl.value.trim();
+    const context = contextEl.value.trim();
+    const dateVal = dateEl.value;
+
+    const mins = clamp(parseInt(durationEl.value || "10", 10), 1, 999);
+    const targetMs = mins * 60 * 1000;
+
+    const totalMs = Math.max(1, state.elapsedTotalMs);
+    const sums = sumByBucket();
+    const score = centerednessScoreFromSums(sums);
+
+    const lines = [];
+    lines.push("TEACHER–STUDENT CENTEREDNESS ANALYZER");
+    lines.push("-----------------------------------");
+    lines.push("Developed by Kevin Droe, Ph.D.");
+    lines.push("");
+    if (observer) lines.push(`Observer: ${observer}`);
+    if (dateVal) lines.push(`Date: ${dateVal}`);
+    if (teacher) lines.push(`Observed teacher: ${teacher}`);
+    if (context) lines.push(`Context: ${context}`);
+    lines.push(`Target time: ${formatMsNoTenths(targetMs)}`);
+    lines.push(`Observed time: ${formatMsNoTenths(state.elapsedTotalMs)}`);
+    lines.push("");
+
+    lines.push(`Centeredness score: ${score}  ( -100 teacher-centered • 0 balanced • +100 student-centered )`);
+    lines.push("");
+
+    lines.push("Bucket totals:");
+    [
+      ["Teacher-centered", sums.TC],
+      ["Student-centered", sums.SC],
+      ["Shared", sums.SHARED],
+      ["Other", sums.NEUTRAL],
+    ].forEach(([name, ms]) => {
+      const pct = Math.round((ms / totalMs) * 100);
+      lines.push(`- ${name}: ${formatMsNoTenths(ms)} (${pct}%)`);
+    });
+
+    lines.push("");
+    lines.push("Time by category:");
+    categories.forEach((c, idx) => {
+      const ms = state.elapsedById[c.id];
+      const pct = Math.round((ms / totalMs) * 100);
+      lines.push(`${idx + 1}. ${c.label}: ${formatMsNoTenths(ms)} (${pct}%)`);
+    });
+
+    const notes = notesEl.value.trim();
+    if (notes) {
+      lines.push("");
+      lines.push("Notes:");
+      lines.push(notes);
+    }
+
+    lines.push("");
+    lines.push("One-line version (for Google Form short answer):");
+    const one = [
+      observer ? `Observer=${observer}` : null,
+      dateVal ? `Date=${dateVal}` : null,
+      teacher ? `Teacher=${teacher}` : null,
+      context ? `Context=${context}` : null,
+      `Time=${formatMsNoTenths(state.elapsedTotalMs)}`,
+      `Score=${score}`,
+      `TeacherSec=${msToSeconds(sums.TC)}`,
+      `StudentSec=${msToSeconds(sums.SC)}`,
+      `SharedSec=${msToSeconds(sums.SHARED)}`,
+      `OtherSec=${msToSeconds(sums.NEUTRAL)}`
+    ].filter(Boolean).join(" | ");
+    lines.push(one);
+
+    outputEl.value = lines.join("\n");
+  }
+
+  function downloadCSV() {
+    if (state.running) stopAll();
+
+    const totalMs = Math.max(1, state.elapsedTotalMs);
+    const sums = sumByBucket();
+    const score = centerednessScoreFromSums(sums);
+
+    const mins = clamp(parseInt(durationEl.value || "10", 10), 1, 999);
+    const targetMs = mins * 60 * 1000;
+
+    const headers = [
+      "observer","date","observed_teacher","context",
+      "target_mmss","observed_mmss",
+      "score",
+      "teacher_seconds","student_seconds","shared_seconds","other_seconds",
+      ...categories.map(c => `${c.id}_seconds`),
+      ...categories.map(c => `${c.id}_percent`),
+      "notes"
+    ];
+
+    const values = [
+      observerEl.value.trim(),
+      dateEl.value,
+      teacherEl.value.trim(),
+      contextEl.value.trim(),
+      formatMsNoTenths(targetMs),
+      formatMsNoTenths(state.elapsedTotalMs),
+      score,
+      msToSeconds(sums.TC),
+      msToSeconds(sums.SC),
+      msToSeconds(sums.SHARED),
+      msToSeconds(sums.NEUTRAL),
+      ...categories.map(c => msToSeconds(state.elapsedById[c.id])),
+      ...categories.map(c => Math.round((state.elapsedById[c.id] / totalMs) * 100)),
+      notesEl.value.trim()
+    ];
+
+    const esc = (s) => {
+      const str = (s ?? "").toString();
+      if (/[",\n]/.test(str)) return `"${str.replace(/"/g, '""')}"`;
+      return str;
+    };
+
+    const csv = `${headers.join(",")}\n${values.map(esc).join(",")}\n`;
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    const safe = (dateEl.value || "observation").replace(/[^0-9a-z]+/gi, "_");
+    a.href = url;
+    a.download = `centeredness_${safe}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  // Buttons
+  startStopBtn.addEventListener("click", () => state.running ? stopAll() : startAll());
+  stopAllBtn.addEventListener("click", stopAll);
+  resetBtn.addEventListener("click", resetAll);
+  exportBtn.addEventListener("click", exportSummary);
+
+  copyBtn.addEventListener("click", async () => {
+    const text = outputEl.value.trim();
+    if (!text) return;
+    try {
+      await navigator.clipboard.writeText(text);
+      copyBtn.textContent = "Copied!";
+      setTimeout(() => (copyBtn.textContent = "Copy to clipboard"), 900);
+    } catch {
+      outputEl.focus();
+      outputEl.select();
+      document.execCommand("copy");
+      copyBtn.textContent = "Copied!";
+      setTimeout(() => (copyBtn.textContent = "Copy to clipboard"), 900);
+    }
+  });
+
+  downloadBtn.addEventListener("click", downloadCSV);
+
+  // Keyboard shortcuts
+  window.addEventListener("keydown", (e) => {
+    const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : "";
+    if (tag === "input" || tag === "textarea") return;
+
+    const k = e.key.toLowerCase();
+    if (e.code === "Space") { e.preventDefault(); state.running ? stopAll() : startAll(); return; }
+    if (k === "e") { exportSummary(); return; }
+
+    if (/^[1-8]$/.test(e.key)) {
+      const idx = parseInt(e.key, 10) - 1;
+      const cat = categories[idx];
+      if (cat) toggleCategory(cat.id);
+    }
+  });
+
+  // init
+  renderTimers();
+  setRunUI();
+  updateDisplays();
+})();
+</script>
+</body>
+</html>
