@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Teacher–Student Centeredness Analyzer</title>
+  <title>Teacher–Student Centeredness Analyzer (Revised)</title>
   <style>
     :root{
       --bg:#ffffff;
@@ -30,7 +30,7 @@
       color:var(--text);
     }
     .wrap{
-      max-width:1100px;
+      max-width:1180px;
       margin:0 auto;
       padding:16px;
     }
@@ -73,7 +73,7 @@
     .grid{
       margin-top:14px;
       display:grid;
-      grid-template-columns: 1.2fr .8fr;
+      grid-template-columns: 1.25fr .75fr;
       gap:14px;
     }
     @media (max-width: 980px){
@@ -149,6 +149,12 @@
       color:#fff;
       border-color:#111;
     }
+    .btn.danger{
+      background:#fff;
+      border-color:rgba(120,0,0,.25);
+      color:#7a0b0b;
+      font-weight:800;
+    }
     .btn:active{transform:translateY(1px)}
     .btn:disabled{
       opacity:.55;
@@ -173,7 +179,7 @@
       color:var(--muted);
       margin:0 0 6px 0;
     }
-    input[type="text"]{
+    input[type="text"], input[type="number"]{
       width:100%;
       padding:10px 11px;
       border-radius:12px;
@@ -334,8 +340,7 @@
           rgba(244, 209, 98, .9) 60deg,
           rgba(255,255,255,0) 0
         );
-      mask:
-        radial-gradient(circle at 50% 100%, transparent 58%, #000 59%);
+      mask: radial-gradient(circle at 50% 100%, transparent 58%, #000 59%);
     }
     .arc2{
       position:absolute;
@@ -347,8 +352,7 @@
           rgba(215, 191, 255, .92) 180deg,
           rgba(255,255,255,0) 0
         );
-      mask:
-        radial-gradient(circle at 50% 100%, transparent 58%, #000 59%);
+      mask: radial-gradient(circle at 50% 100%, transparent 58%, #000 59%);
     }
     .needle{
       position:absolute;
@@ -410,6 +414,13 @@
     .noteBox textarea{font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;}
     .exportBox textarea{min-height:160px;}
 
+    .miniBtns{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      margin-top:10px;
+    }
+
     .kbd{
       font-size:12px;
       color:var(--muted);
@@ -433,11 +444,74 @@
       line-height:1.35;
     }
 
-    .miniBtns{
+    /* Event Log */
+    .logHeader{
       display:flex;
       flex-wrap:wrap;
       gap:10px;
-      margin-top:10px;
+      align-items:center;
+      justify-content:space-between;
+      margin-bottom:10px;
+    }
+    .logTools{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      align-items:center;
+    }
+    .logList{
+      border:1px solid var(--border);
+      border-radius:14px;
+      overflow:hidden;
+      background:#fff;
+      max-height:320px;
+      overflow:auto;
+    }
+    .logItem{
+      display:flex;
+      gap:10px;
+      align-items:flex-start;
+      justify-content:space-between;
+      padding:10px 10px;
+      border-top:1px solid var(--border);
+    }
+    .logItem:first-child{border-top:0}
+    .logLeft{
+      min-width:0;
+    }
+    .logTime{
+      font-variant-numeric: tabular-nums;
+      font-weight:900;
+      font-size:13px;
+    }
+    .logCat{
+      font-size:13px;
+      font-weight:800;
+      margin-top:2px;
+      line-height:1.2;
+      word-break:break-word;
+    }
+    .logMeta{
+      font-size:12px;
+      color:var(--muted);
+      margin-top:4px;
+    }
+    .jumpBtn{
+      border:1px solid rgba(0,0,0,.15);
+      background:#fff;
+      border-radius:10px;
+      padding:8px 10px;
+      font-weight:800;
+      cursor:pointer;
+      white-space:nowrap;
+    }
+    .jumpBtn:active{transform:translateY(1px)}
+    .jumpBtn:disabled{opacity:.55; cursor:not-allowed}
+
+    .noLog{
+      padding:12px;
+      color:var(--muted);
+      font-size:13px;
     }
   </style>
 </head>
@@ -447,7 +521,7 @@
     <header>
       <img src="Next-Gen-Music-Ed-logo.png" alt="Next Gen Music Ed logo" />
       <div class="htext">
-        <h1>Teacher–Student Centeredness Analyzer</h1>
+        <h1>Teacher–Student Centeredness Analyzer (Revised)</h1>
         <p class="sub"><strong>Developed by Kevin Droe, Ph.D.</strong></p>
         <p class="sub">
           Tap Start for the category you are observing. Starting one category automatically stops the others.
@@ -458,7 +532,7 @@
     </header>
 
     <div class="grid">
-      <!-- LEFT: observation + video -->
+      <!-- LEFT -->
       <section class="panel">
         <div class="row">
           <div class="segmented" role="tablist" aria-label="Observation mode">
@@ -529,9 +603,29 @@
         <div class="footerMini">
           Centeredness score uses only teacher vs. student time: <span class="val">score = ((student − teacher)/(student + teacher)) × 100</span>. “Other” is treated as neutral for the score but included in percentages.
         </div>
+
+        <!-- EVENT LOG (new) -->
+        <div class="metric" style="margin-top:12px;">
+          <div class="logHeader">
+            <h2 style="margin:0;">Event Log</h2>
+            <div class="logTools">
+              <label class="tog" title="Applies only in Video mode: Jump buttons will seek the video to the event time.">
+                <input id="jumpSeeksVideo" type="checkbox" checked />
+                Jump seeks video
+              </label>
+              <button class="btn danger" id="clearLogBtn" type="button" title="Clears the event log (does not reset timers).">Clear Log</button>
+            </div>
+          </div>
+          <div class="small" style="margin-top:-4px;">
+            Each time you start a category, an event is logged. Use <strong>Jump to</strong> to seek video (Video mode) or to highlight the event (Live mode).
+          </div>
+          <div class="logList" id="logList">
+            <div class="noLog" id="noLog">No events yet. Start a category to add events here.</div>
+          </div>
+        </div>
       </section>
 
-      <!-- RIGHT: stats + gauge + notes + export text -->
+      <!-- RIGHT -->
       <aside class="stats">
         <div class="metric">
           <h2>Centeredness Gauge</h2>
@@ -578,32 +672,43 @@
           <div class="line"><span>Mode</span><span class="val" id="modeLabel">Live</span></div>
           <div class="line"><span>Sync to playback</span><span class="val" id="syncLabel">Off</span></div>
         </div>
+
+        <div class="metric">
+          <h2>Quick Tips</h2>
+          <div class="small" style="margin-top:0;">
+            • If you want the Event Log to align with video time, turn ON <strong>Sync observation to playback</strong> and hit play first.<br/>
+            • You can still log events while paused; “Jump to” will seek to the logged time.
+          </div>
+        </div>
       </aside>
     </div>
   </div>
 
   <script>
     /***********************
-     * Categories & Scoring
+     * Categories
      ***********************/
     const CATEGORIES = [
-      { id: 1, name: "Teacher explanation/talk", group: "teacher", key: "1", weight: -1 },
-      { id: 2, name: "Teacher modeling", group: "teacher", key: "2", weight: -1 },
-      { id: 3, name: "Teacher directing/correcting", group: "teacher", key: "3", weight: -1 },
-      { id: 4, name: "Students performing", group: "student", key: "4", weight: +1 },
-      { id: 5, name: "Student discussion/reflection", group: "student", key: "5", weight: +1 },
-      { id: 6, name: "Student decision making", group: "student", key: "6", weight: +1 },
-      { id: 7, name: "Collaborative music making", group: "student", key: "7", weight: +1 },
-      { id: 8, name: "Other", group: "other", key: "8", weight: 0 },
+      { id: 1, name: "Teacher explanation/talk", group: "teacher", key: "1" },
+      { id: 2, name: "Teacher modeling", group: "teacher", key: "2" },
+      { id: 3, name: "Teacher directing/correcting", group: "teacher", key: "3" },
+      { id: 4, name: "Students performing", group: "student", key: "4" },
+      { id: 5, name: "Student discussion/reflection", group: "student", key: "5" },
+      { id: 6, name: "Student decision making", group: "student", key: "6" },
+      { id: 7, name: "Collaborative music making", group: "student", key: "7" },
+      { id: 8, name: "Other", group: "other", key: "8" },
     ];
 
     const $ = (sel) => document.querySelector(sel);
 
+    // Mode
     const modeLiveBtn = $("#modeLive");
     const modeVideoBtn = $("#modeVideo");
     const videoBox = $("#videoBox");
     const modeLabel = $("#modeLabel");
+    let isVideoMode = false;
 
+    // Controls
     const autoClassify = $("#autoClassify");
     const stopAllBtn = $("#stopAllBtn");
     const resetBtn = $("#resetBtn");
@@ -611,9 +716,11 @@
     const importJsonBtn = $("#importJsonBtn");
     const importFile = $("#importFile");
 
+    // Cards & notes
     const cardsEl = $("#cards");
     const notesEl = $("#notes");
 
+    // Gauge/stat fields
     const needleEl = $("#needle");
     const scoreBigEl = $("#scoreBig");
     const totalTimeEl = $("#totalTime");
@@ -623,25 +730,38 @@
     const activeCatEl = $("#activeCat");
     const syncLabelEl = $("#syncLabel");
 
-    // New export-to-text UI
+    // Export-to-text UI
     const exportTextEl = $("#exportText");
     const genExportTextBtn = $("#genExportTextBtn");
     const copyExportBtn = $("#copyExportBtn");
     const downloadCsvBtn = $("#downloadCsvBtn");
 
+    // Event Log UI
+    const logListEl = $("#logList");
+    const noLogEl = $("#noLog");
+    const clearLogBtn = $("#clearLogBtn");
+    const jumpSeeksVideoEl = $("#jumpSeeksVideo");
+
     /***********************
      * Timing state
      ***********************/
     let totals = Object.fromEntries(CATEGORIES.map(c => [c.id, 0])); // ms
-    let segments = []; // {catId, startMs, endMs}
+    let segments = [];  // {catId, startMs, endMs}
+
     let activeCatId = null;
     let activeStartPerf = null;
     let lastSelectedCatId = 8;
 
-    let isVideoMode = false;
+    let sessionStartEpoch = Date.now();
+
+    // Sync & video
     let syncEnabled = false;
 
-    let sessionStartEpoch = Date.now();
+    // Event Log entries:
+    // { id, tMs, catId, label, source }
+    // source: "manual" | "sync"
+    let events = [];
+    let eventIdCounter = 1;
 
     /***********************
      * UI: Build cards
@@ -651,7 +771,6 @@
       for(const cat of CATEGORIES){
         const div = document.createElement("div");
         div.className = `card ${cat.group}`;
-
         div.innerHTML = `
           <div class="ctop">
             <p class="cname">${cat.id}. ${cat.name}</p>
@@ -664,8 +783,7 @@
           <button class="startBtn" id="btn-${cat.id}" type="button">Start</button>
         `;
         cardsEl.appendChild(div);
-
-        div.querySelector(`#btn-${cat.id}`).addEventListener("click", () => startCategory(cat.id));
+        div.querySelector(`#btn-${cat.id}`).addEventListener("click", () => startCategory(cat.id, "manual"));
       }
       refreshButtons();
       render();
@@ -685,63 +803,7 @@
     }
 
     /***********************
-     * Timing functions
-     ***********************/
-    function stopActive(){
-      if(activeCatId == null) return;
-
-      const now = performance.now();
-      const elapsed = Math.max(0, now - activeStartPerf);
-      totals[activeCatId] += elapsed;
-
-      const seg = segments[segments.length - 1];
-      if(seg && seg.endMs == null){
-        seg.endMs = getObservedMs();
-      }
-
-      activeCatId = null;
-      activeStartPerf = null;
-      refreshButtons();
-      render();
-    }
-
-    function startCategory(catId){
-      if(activeCatId === catId) return;
-      stopActive();
-
-      activeCatId = catId;
-      lastSelectedCatId = catId;
-      activeStartPerf = performance.now();
-
-      segments.push({ catId, startMs: getObservedMs(), endMs: null });
-
-      refreshButtons();
-      render();
-    }
-
-    function getObservedMs(){
-      const base = Object.values(totals).reduce((a,b)=>a+b,0);
-      if(activeCatId != null && activeStartPerf != null){
-        return base + Math.max(0, performance.now() - activeStartPerf);
-      }
-      return base;
-    }
-
-    function resetAll(){
-      totals = Object.fromEntries(CATEGORIES.map(c => [c.id, 0]));
-      segments = [];
-      activeCatId = null;
-      activeStartPerf = null;
-      lastSelectedCatId = 8;
-      sessionStartEpoch = Date.now();
-      notesEl.value = "";
-      exportTextEl.value = "";
-      refreshButtons();
-      render();
-    }
-
-    /***********************
-     * Calculations
+     * Time helpers
      ***********************/
     function msToHMS(ms){
       const totalSec = Math.floor(ms/1000);
@@ -751,9 +813,12 @@
       const pad = (n)=>String(n).padStart(2,"0");
       return `${pad(h)}:${pad(m)}:${pad(s)}`;
     }
-
     function msToSeconds(ms){ return ms/1000; }
+    function clamp(n, lo, hi){ return Math.max(lo, Math.min(hi, n)); }
 
+    /***********************
+     * Compute totals (including active)
+     ***********************/
     function computeTotalsWithActive(){
       const t = {...totals};
       if(activeCatId != null && activeStartPerf != null){
@@ -780,10 +845,163 @@
       return ((studentMs - teacherMs) / denom) * 100;
     }
 
-    function clamp(n, lo, hi){ return Math.max(lo, Math.min(hi, n)); }
+    /***********************
+     * Observation clock
+     ***********************/
+    function getObservedMs(){
+      const base = Object.values(totals).reduce((a,b)=>a+b,0);
+      if(activeCatId != null && activeStartPerf != null){
+        return base + Math.max(0, performance.now() - activeStartPerf);
+      }
+      return base;
+    }
 
     /***********************
-     * Gauge rendering
+     * Event Log
+     ***********************/
+    function addEvent(catId, source="manual"){
+      const tMs = getEventTimeMs(); // aligns to video time when possible, else observed time
+      const cat = CATEGORIES.find(c=>c.id===catId);
+      events.push({
+        id: eventIdCounter++,
+        tMs,
+        catId,
+        label: `${catId}. ${cat?.name || "Unknown"}`,
+        source
+      });
+      renderEventLog();
+    }
+
+    function clearEventLog(){
+      events = [];
+      renderEventLog();
+    }
+
+    function renderEventLog(){
+      // Clear list
+      logListEl.innerHTML = "";
+
+      if(events.length === 0){
+        const div = document.createElement("div");
+        div.className = "noLog";
+        div.id = "noLog";
+        div.textContent = "No events yet. Start a category to add events here.";
+        logListEl.appendChild(div);
+        return;
+      }
+
+      // Newest first (like many observation logs)
+      const sorted = [...events].sort((a,b)=>b.id - a.id);
+
+      for(const ev of sorted){
+        const cat = CATEGORIES.find(c=>c.id===ev.catId);
+        const item = document.createElement("div");
+        item.className = "logItem";
+        item.id = `event-${ev.id}`;
+
+        const badge = (cat?.group === "teacher") ? "Teacher" : (cat?.group === "student") ? "Student" : "Other";
+        const src = ev.source === "sync" ? "sync" : "manual";
+
+        item.innerHTML = `
+          <div class="logLeft">
+            <div class="logTime">${msToHMS(ev.tMs)}</div>
+            <div class="logCat">${ev.label}</div>
+            <div class="logMeta">${badge} • logged via ${src}</div>
+          </div>
+          <div>
+            <button class="jumpBtn" type="button">Jump to</button>
+          </div>
+        `;
+
+        const btn = item.querySelector(".jumpBtn");
+        btn.addEventListener("click", () => jumpToEvent(ev.id));
+        logListEl.appendChild(item);
+      }
+    }
+
+    function highlightEventRow(eventId){
+      const el = document.getElementById(`event-${eventId}`);
+      if(!el) return;
+      el.style.outline = "3px solid rgba(0,0,0,.25)";
+      el.style.outlineOffset = "-2px";
+      el.scrollIntoView({behavior:"smooth", block:"nearest"});
+      setTimeout(()=>{ el.style.outline = "none"; }, 900);
+    }
+
+    function jumpToEvent(eventId){
+      const ev = events.find(e=>e.id===eventId);
+      if(!ev) return;
+
+      // In Video mode: seek if possible and checkbox enabled
+      if(isVideoMode && jumpSeeksVideoEl.checked){
+        const ok = seekVideoToMs(ev.tMs);
+        if(!ok){
+          // If can't seek, still highlight
+          highlightEventRow(eventId);
+        }else{
+          highlightEventRow(eventId);
+        }
+      }else{
+        // Live mode (or seek disabled): just highlight
+        highlightEventRow(eventId);
+      }
+    }
+
+    /***********************
+     * Start/Stop categories
+     ***********************/
+    function stopActive(){
+      if(activeCatId == null) return;
+
+      const now = performance.now();
+      const elapsed = Math.max(0, now - activeStartPerf);
+      totals[activeCatId] += elapsed;
+
+      const seg = segments[segments.length - 1];
+      if(seg && seg.endMs == null){
+        seg.endMs = getObservedMs();
+      }
+
+      activeCatId = null;
+      activeStartPerf = null;
+      refreshButtons();
+      render();
+    }
+
+    function startCategory(catId, source="manual"){
+      if(activeCatId === catId) return;
+
+      stopActive();
+
+      activeCatId = catId;
+      lastSelectedCatId = catId;
+      activeStartPerf = performance.now();
+
+      segments.push({ catId, startMs: getObservedMs(), endMs: null });
+
+      // Event log entry every time a category is started
+      addEvent(catId, source);
+
+      refreshButtons();
+      render();
+    }
+
+    function resetAll(){
+      totals = Object.fromEntries(CATEGORIES.map(c => [c.id, 0]));
+      segments = [];
+      activeCatId = null;
+      activeStartPerf = null;
+      lastSelectedCatId = 8;
+      sessionStartEpoch = Date.now();
+      notesEl.value = "";
+      exportTextEl.value = "";
+      clearEventLog();
+      refreshButtons();
+      render();
+    }
+
+    /***********************
+     * Gauge + stats render
      ***********************/
     function setGauge(score){
       const s = clamp(score, -100, 100);
@@ -792,9 +1010,6 @@
       scoreBigEl.textContent = `${Math.round(s)}`;
     }
 
-    /***********************
-     * Render loop (live)
-     ***********************/
     function render(){
       const t = computeTotalsWithActive();
       const {teacher, student, other, total} = computeGroupMs(t);
@@ -823,131 +1038,47 @@
     }
 
     /***********************
-     * Export / Import (JSON)
-     ***********************/
-    function makeSessionJson(){
-      const t = computeTotalsWithActive();
-      const {teacher, student, other, total} = computeGroupMs(t);
-      const score = computeCenteredness(teacher, student);
-
-      const segs = segments.map(s => ({...s}));
-      const last = segs[segs.length - 1];
-      if(last && last.endMs == null){
-        last.endMs = getObservedMs();
-      }
-
-      return {
-        app: "Teacher–Student Centeredness Analyzer",
-        version: "1.1.0",
-        exportedAtEpoch: Date.now(),
-        sessionStartEpoch,
-        mode: isVideoMode ? "video" : "live",
-        syncEnabled,
-        categories: CATEGORIES,
-        notes: notesEl.value || "",
-        totalsMs: t,
-        summary: {
-          teacherMs: teacher,
-          studentMs: student,
-          otherMs: other,
-          totalMs: total,
-          centerednessScore: score
-        },
-        segments: segs
-      };
-    }
-
-    function downloadBlob(filename, blob){
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setTimeout(()=>URL.revokeObjectURL(url), 2500);
-    }
-
-    function exportJson(){
-      const data = makeSessionJson();
-      const stamp = new Date().toISOString().replaceAll(":","-");
-      const blob = new Blob([JSON.stringify(data, null, 2)], {type:"application/json"});
-      downloadBlob(`centeredness-observation-${stamp}.json`, blob);
-    }
-
-    function importJsonFile(file){
-      const reader = new FileReader();
-      reader.onload = () => {
-        try{
-          const data = JSON.parse(reader.result);
-          if(!data || !data.totalsMs || !data.categories){
-            throw new Error("Invalid file format.");
-          }
-
-          stopActive();
-
-          totals = {};
-          for(const cat of CATEGORIES){
-            totals[cat.id] = Number(data.totalsMs[cat.id] || 0);
-          }
-          segments = Array.isArray(data.segments) ? data.segments.map(s => ({
-            catId: Number(s.catId),
-            startMs: Number(s.startMs),
-            endMs: (s.endMs == null ? null : Number(s.endMs))
-          })) : [];
-
-          notesEl.value = data.notes || "";
-          exportTextEl.value = ""; // don't overwrite; user can regenerate
-          sessionStartEpoch = Number(data.sessionStartEpoch || Date.now());
-
-          const wantVideo = (data.mode === "video");
-          setMode(wantVideo ? "video" : "live");
-          setSync(Boolean(data.syncEnabled));
-
-          activeCatId = null;
-          activeStartPerf = null;
-          lastSelectedCatId = 8;
-
-          refreshButtons();
-          render();
-        }catch(err){
-          alert("Could not import that file. " + (err?.message || ""));
-        }
-      };
-      reader.readAsText(file);
-    }
-
-    /***********************
-     * Export-to-text (like other apps)
+     * Export-to-text + CSV
      ***********************/
     function buildExportSummary(){
       const t = computeTotalsWithActive();
       const {teacher, student, other, total} = computeGroupMs(t);
       const score = computeCenteredness(teacher, student);
 
-      const safePct = (ms) => total > 0 ? ((ms/total)*100).toFixed(1) : "0.0";
+      const pctOfTotal = (ms) => total > 0 ? ((ms/total)*100).toFixed(1) : "0.0";
       const stamp = new Date().toLocaleString();
 
       const lines = [];
-      lines.push("Teacher–Student Centeredness Analyzer");
+      lines.push("Teacher–Student Centeredness Analyzer (Revised)");
       lines.push(`Exported: ${stamp}`);
       lines.push(`Mode: ${isVideoMode ? "Video" : "Live"} | Sync: ${syncEnabled ? "On" : "Off"}`);
       lines.push("");
 
-      lines.push(`Total observed time: ${msToHMS(total)} (${(msToSeconds(total)).toFixed(2)}s)`);
+      lines.push(`Total observed time: ${msToHMS(total)} (${msToSeconds(total).toFixed(2)}s)`);
       lines.push(`Centeredness score: ${score.toFixed(2)} (−100 teacher-centered to +100 student-centered)`);
       lines.push("");
 
       lines.push("Group breakdown:");
-      lines.push(`Teacher (1–3): ${msToHMS(teacher)} | ${safePct(teacher)}%`);
-      lines.push(`Student (4–7): ${msToHMS(student)} | ${safePct(student)}%`);
-      lines.push(`Other (8):      ${msToHMS(other)} | ${safePct(other)}%`);
+      lines.push(`Teacher (1–3): ${msToHMS(teacher)} | ${pctOfTotal(teacher)}%`);
+      lines.push(`Student (4–7): ${msToHMS(student)} | ${pctOfTotal(student)}%`);
+      lines.push(`Other (8):      ${msToHMS(other)} | ${pctOfTotal(other)}%`);
       lines.push("");
 
       lines.push("Category breakdown:");
       for(const cat of CATEGORIES){
         const ms = t[cat.id] || 0;
-        lines.push(`${cat.id}. ${cat.name}: ${msToHMS(ms)} | ${safePct(ms)}%`);
+        lines.push(`${cat.id}. ${cat.name}: ${msToHMS(ms)} | ${pctOfTotal(ms)}%`);
+      }
+
+      lines.push("");
+      lines.push("Event Log (most recent first):");
+      const sorted = [...events].sort((a,b)=>b.id - a.id);
+      if(sorted.length === 0){
+        lines.push("(no events)");
+      }else{
+        for(const ev of sorted){
+          lines.push(`- ${msToHMS(ev.tMs)} — ${ev.label}`);
+        }
       }
 
       const notes = (notesEl.value || "").trim();
@@ -975,7 +1106,6 @@
         copyExportBtn.textContent = "Copied!";
         setTimeout(()=>copyExportBtn.textContent="Copy to Clipboard", 1200);
       }catch{
-        // Fallback
         exportTextEl.focus();
         exportTextEl.select();
         const ok = document.execCommand("copy");
@@ -1015,8 +1145,36 @@
       rows.push(["Other(8)",(other/1000).toFixed(2),msToHMS(other),pct(other).toFixed(1)].join(","));
       rows.push(["TOTAL",(total/1000).toFixed(2),msToHMS(total),"100.0"].join(","));
       rows.push(["CenterednessScore",score.toFixed(2)].join(","));
+
+      rows.push("");
+      rows.push(["EventId","EventTimeHMS","EventTimeSeconds","CategoryId","Category","Source"].join(","));
+      const sorted = [...events].sort((a,b)=>a.id - b.id); // chronological
+      for(const ev of sorted){
+        const cat = CATEGORIES.find(c=>c.id===ev.catId);
+        rows.push([
+          ev.id,
+          msToHMS(ev.tMs),
+          (ev.tMs/1000).toFixed(2),
+          ev.catId,
+          `"${(cat?.name || "").replaceAll('"','""')}"`,
+          ev.source
+        ].join(","));
+      }
+
+      rows.push("");
       rows.push(["Notes", `"${(notesEl.value||"").replaceAll('"','""')}"`].join(","));
       return rows.join("\n");
+    }
+
+    function downloadBlob(filename, blob){
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(()=>URL.revokeObjectURL(url), 2500);
     }
 
     function downloadCsv(){
@@ -1024,6 +1182,103 @@
       const stamp = new Date().toISOString().replaceAll(":","-");
       const blob = new Blob([csv], {type:"text/csv"});
       downloadBlob(`centeredness-export-${stamp}.csv`, blob);
+    }
+
+    /***********************
+     * JSON export/import (includes events)
+     ***********************/
+    function makeSessionJson(){
+      const t = computeTotalsWithActive();
+      const {teacher, student, other, total} = computeGroupMs(t);
+      const score = computeCenteredness(teacher, student);
+
+      const segs = segments.map(s => ({...s}));
+      const last = segs[segs.length - 1];
+      if(last && last.endMs == null){
+        last.endMs = getObservedMs();
+      }
+
+      return {
+        app: "Teacher–Student Centeredness Analyzer (Revised)",
+        version: "1.2.0",
+        exportedAtEpoch: Date.now(),
+        sessionStartEpoch,
+        mode: isVideoMode ? "video" : "live",
+        syncEnabled,
+        categories: CATEGORIES,
+        notes: notesEl.value || "",
+        totalsMs: t,
+        summary: {
+          teacherMs: teacher,
+          studentMs: student,
+          otherMs: other,
+          totalMs: total,
+          centerednessScore: score
+        },
+        segments: segs,
+        events: events,
+      };
+    }
+
+    function exportJson(){
+      const data = makeSessionJson();
+      const stamp = new Date().toISOString().replaceAll(":","-");
+      const blob = new Blob([JSON.stringify(data, null, 2)], {type:"application/json"});
+      downloadBlob(`centeredness-observation-${stamp}.json`, blob);
+    }
+
+    function importJsonFile(file){
+      const reader = new FileReader();
+      reader.onload = () => {
+        try{
+          const data = JSON.parse(reader.result);
+          if(!data || !data.totalsMs || !data.categories){
+            throw new Error("Invalid file format.");
+          }
+
+          stopActive();
+
+          totals = {};
+          for(const cat of CATEGORIES){
+            totals[cat.id] = Number(data.totalsMs[cat.id] || 0);
+          }
+
+          segments = Array.isArray(data.segments) ? data.segments.map(s => ({
+            catId: Number(s.catId),
+            startMs: Number(s.startMs),
+            endMs: (s.endMs == null ? null : Number(s.endMs))
+          })) : [];
+
+          // events
+          events = Array.isArray(data.events) ? data.events.map(e => ({
+            id: Number(e.id),
+            tMs: Number(e.tMs),
+            catId: Number(e.catId),
+            label: String(e.label || ""),
+            source: String(e.source || "manual")
+          })) : [];
+          eventIdCounter = events.reduce((m,e)=>Math.max(m, e.id||0), 0) + 1;
+
+          notesEl.value = data.notes || "";
+          exportTextEl.value = "";
+          sessionStartEpoch = Number(data.sessionStartEpoch || Date.now());
+
+          const wantVideo = (data.mode === "video");
+          setMode(wantVideo ? "video" : "live");
+          setSync(Boolean(data.syncEnabled));
+
+          activeCatId = null;
+          activeStartPerf = null;
+          lastSelectedCatId = 8;
+
+          refreshButtons();
+          render();
+          renderEventLog();
+        }catch(err){
+          alert("Could not import that file. " + (err?.message || ""));
+        }
+      };
+      reader.readAsText(file);
     }
 
     /***********************
@@ -1039,17 +1294,16 @@
       modeLabel.textContent = isVideoMode ? "Video" : "Live";
       if(!isVideoMode) setSync(false);
     }
-
     modeLiveBtn.addEventListener("click", () => setMode("live"));
     modeVideoBtn.addEventListener("click", () => setMode("video"));
 
     /***********************
-     * Automatic classification (keyboard)
+     * Keyboard shortcuts
      ***********************/
     document.addEventListener("keydown", (e) => {
       if(autoClassify.checked){
         if(e.key >= "1" && e.key <= "8"){
-          startCategory(Number(e.key));
+          startCategory(Number(e.key), "manual");
           e.preventDefault();
           return;
         }
@@ -1062,15 +1316,14 @@
     });
 
     /***********************
-     * Buttons
+     * Buttons wiring
      ***********************/
     stopAllBtn.addEventListener("click", () => stopActive());
     resetBtn.addEventListener("click", () => {
-      const ok = confirm("Reset all timers, segments, notes, and export text?");
+      const ok = confirm("Reset all timers, segments, notes, export text, and event log?");
       if(ok) resetAll();
     });
     exportJsonBtn.addEventListener("click", exportJson);
-
     importJsonBtn.addEventListener("click", () => importFile.click());
     importFile.addEventListener("change", () => {
       if(importFile.files && importFile.files[0]){
@@ -1082,6 +1335,11 @@
     genExportTextBtn.addEventListener("click", generateExportText);
     copyExportBtn.addEventListener("click", copyExportText);
     downloadCsvBtn.addEventListener("click", downloadCsv);
+
+    clearLogBtn.addEventListener("click", () => {
+      const ok = confirm("Clear the Event Log? (Timers will not be reset.)");
+      if(ok) clearEventLog();
+    });
 
     /***********************
      * Video: YouTube + Local
@@ -1120,7 +1378,8 @@
 
     localVideo.addEventListener("play", () => {
       if(!isVideoMode || !syncEnabled) return;
-      startCategory(lastSelectedCatId || 8);
+      // start the last category chosen (or Other)
+      startCategory(lastSelectedCatId || 8, "sync");
     });
     localVideo.addEventListener("pause", () => {
       if(!isVideoMode || !syncEnabled) return;
@@ -1131,7 +1390,7 @@
       stopActive();
     });
 
-    // YouTube IFrame API
+    /******** YouTube IFrame API ********/
     let ytPlayer = null;
     let ytApiReady = false;
     let ytLoading = false;
@@ -1160,12 +1419,8 @@
     function parseYouTubeId(url){
       try{
         const u = new URL(url);
-        if(u.hostname.includes("youtu.be")){
-          return u.pathname.slice(1);
-        }
-        if(u.searchParams.get("v")){
-          return u.searchParams.get("v");
-        }
+        if(u.hostname.includes("youtu.be")) return u.pathname.slice(1);
+        if(u.searchParams.get("v")) return u.searchParams.get("v");
         const parts = u.pathname.split("/").filter(Boolean);
         const embedIdx = parts.indexOf("embed");
         if(embedIdx >= 0 && parts[embedIdx+1]) return parts[embedIdx+1];
@@ -1200,7 +1455,7 @@
             onStateChange: (ev) => {
               if(!isVideoMode || !syncEnabled) return;
               if(ev.data === YT.PlayerState.PLAYING){
-                startCategory(lastSelectedCatId || 8);
+                startCategory(lastSelectedCatId || 8, "sync");
               }else if(ev.data === YT.PlayerState.PAUSED || ev.data === YT.PlayerState.ENDED){
                 stopActive();
               }
@@ -1216,8 +1471,82 @@
         ytErrorEl.style.display = "block";
       }
     }
-
     loadYtBtn.addEventListener("click", () => loadYouTube());
+
+    /***********************
+     * Event time alignment + seeking
+     ***********************/
+    function getEventTimeMs(){
+      // Best effort:
+      // - If in video mode and a player is loaded, log video current time (ms).
+      // - Else log observation time (ms).
+      const videoMs = getCurrentVideoTimeMs();
+      if(isVideoMode && videoMs != null) return videoMs;
+      return getObservedMs();
+    }
+
+    function getCurrentVideoTimeMs(){
+      // Local video
+      if(localVideo && localVideo.src && !isNaN(localVideo.currentTime) && localVideo.currentTime > 0){
+        return Math.round(localVideo.currentTime * 1000);
+      }
+      // YouTube
+      try{
+        if(ytPlayer && typeof ytPlayer.getCurrentTime === "function"){
+          const t = ytPlayer.getCurrentTime();
+          if(typeof t === "number" && t >= 0) return Math.round(t * 1000);
+        }
+      }catch{}
+      return null;
+    }
+
+    function seekVideoToMs(ms){
+      const sec = ms/1000;
+
+      // Prefer local video if loaded
+      if(isVideoMode && localVideo && localVideo.src && !isNaN(localVideo.duration)){
+        try{
+          localVideo.currentTime = clamp(sec, 0, Math.max(0, localVideo.duration - 0.01));
+          return true;
+        }catch{ /* ignore */ }
+      }
+
+      // Else YouTube
+      try{
+        if(isVideoMode && ytPlayer && typeof ytPlayer.seekTo === "function"){
+          ytPlayer.seekTo(sec, true);
+          return true;
+        }
+      }catch{ /* ignore */ }
+
+      return false;
+    }
+
+    /***********************
+     * Clipboard copy for export
+     ***********************/
+    async function copyExportText(){
+      const text = exportTextEl.value.trim();
+      if(!text){
+        alert("Nothing to copy yet. Click “Generate Export Text” first.");
+        return;
+      }
+      try{
+        await navigator.clipboard.writeText(text);
+        copyExportBtn.textContent = "Copied!";
+        setTimeout(()=>copyExportBtn.textContent="Copy to Clipboard", 1200);
+      }catch{
+        exportTextEl.focus();
+        exportTextEl.select();
+        const ok = document.execCommand("copy");
+        if(ok){
+          copyExportBtn.textContent = "Copied!";
+          setTimeout(()=>copyExportBtn.textContent="Copy to Clipboard", 1200);
+        }else{
+          alert("Clipboard copy failed. You can still select the text and copy manually.");
+        }
+      }
+    }
 
     /***********************
      * Init
@@ -1225,6 +1554,7 @@
     buildCards();
     setMode("live");
     setSync(false);
+    renderEventLog();
     loop();
   </script>
 </body>
